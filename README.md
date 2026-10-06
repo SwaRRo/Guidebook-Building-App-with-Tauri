@@ -3,7 +3,7 @@
 
 A dependency-free, static, multi-page learning course for beginning a Tauri + React + FastAPI + SQLite desktop app project.
 
-## Run locally
+## Download the files and Run locally
 
 From the project directory:
 
