@@ -1,3 +1,4 @@
+(made with help of manus.im and researched with Gemini)
 # App Builder’s Workshop
 
 A dependency-free, static, multi-page learning course for beginning a Tauri + React + FastAPI + SQLite desktop app project.
