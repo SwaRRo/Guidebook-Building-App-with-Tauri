@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A practical beginner course in HTML, CSS, JavaScript, React, Python, FastAPI, SQLite, and Tauri for building desktop apps.">
+  <title>Build a Desktop App — Beginner’s Coding Course</title>
+  <link rel="icon" href="assets/course-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body data-course-home>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="topbar"><div class="topbar-inner">
+    <a class="brand" href="index.html"><img src="assets/course-mark.svg" alt=""><span>App Builder’s Workshop</span></a>
+    <nav class="topnav" aria-label="Main navigation"><a href="#roadmap">Chapters</a><a href="#setup">Setup</a><a class="nav-pill" href="chapters/01-app-map.html">Begin lesson 01 →</a></nav>
+  </div></header>
+  <div class="reading-progress" aria-hidden="true"><span data-reading-progress></span></div>
+  <main id="main" class="layout">
+    <aside class="rail" aria-label="Course chapters"><div class="rail-label">Course index</div>
+      <a href="#roadmap" aria-current="page"><span class="rail-number">⌂</span>Start here</a>
+      <a href="chapters/01-app-map.html"><span class="rail-number">01</span>Map the app</a>
+      <a href="chapters/02-html-css.html"><span class="rail-number">02</span>HTML &amp; CSS</a>
+      <a href="chapters/03-js-data.html"><span class="rail-number">03</span>JavaScript data</a>
+      <a href="chapters/04-js-logic.html"><span class="rail-number">04</span>Logic &amp; functions</a>
+      <a href="chapters/05-async-json.html"><span class="rail-number">05</span>Async &amp; JSON</a>
+      <a href="chapters/06-react-components.html"><span class="rail-number">06</span>React components</a>
+      <a href="chapters/07-react-state.html"><span class="rail-number">07</span>React state</a>
+      <a href="chapters/08-python-fastapi.html"><span class="rail-number">08</span>Python &amp; FastAPI</a>
+      <a href="chapters/09-sqlite.html"><span class="rail-number">09</span>SQL &amp; SQLite</a>
+      <a href="chapters/10-tauri-rust.html"><span class="rail-number">10</span>Tauri &amp; Rust</a>
+      <a href="chapters/11-capstone.html"><span class="rail-number">11</span>Build the vertical slice</a>
+    </aside>
+    <div class="main">
+      <div class="crumbs"><span>Course / Start here</span></div>
+      <section class="hero">
+        <div class="eyebrow">A hands-on learning path · beginner friendly</div>
+        <h1>Learn the foundations behind the apps you want to build.</h1>
+        <p class="lead">A guided workshop for someone who knows a little Python and wants to understand how a Tauri desktop interface, React, JavaScript, a backend API, and a database fit together.</p>
+        <p>Read the lessons in order, type the examples, and build one small feature before expanding the system. The aim is not to memorize every keyword; it is to follow data from a screen through program logic and storage, then back again.</p>
+        <div class="hero-actions"><a class="button" href="chapters/01-app-map.html">Start with Chapter 01 <span aria-hidden="true">→</span></a><a class="button secondary" href="#roadmap">Browse the roadmap</a></div>
+        <div class="status-strip"><span class="status-chip">11 chapters</span><span class="status-chip">HTML pages, no sign-in</span><span class="status-chip">Practice-first</span><span class="status-chip">Examples transfer to many app types</span></div>
+        <div class="hero-diagram" role="img" aria-label="Architecture sketch: React interface inside Tauri sends a request to a FastAPI service, which reads and writes SQLite.">
+          <div class="diagram-row"><div class="diagram-box"><strong>Frontend UI</strong><span>forms · lists · state</span></div><span class="diagram-arrow" aria-hidden="true">→</span><div class="diagram-box"><strong>Tauri shell</strong><span>desktop window · Rust host</span></div><span class="diagram-arrow" aria-hidden="true">→</span><div class="diagram-box"><strong>FastAPI</strong><span>validation · business rules</span></div><span class="diagram-arrow" aria-hidden="true">→</span><div class="diagram-box"><strong>SQLite</strong><span>records · activity history</span></div></div>
+        </div>
+        <p class="small muted">This is one possible arrangement, not a requirement. Chapter 10 explains when to use a Python service and when Tauri/Rust can access local data more directly.</p>
+      </section>
+
+      <section id="roadmap">
+        <div class="section-heading"><div><div class="eyebrow">The learning sequence</div><h2>Learn the tools, then build a small feature</h2></div><p>11 chapters · beginner to first vertical slice</p></div>
+        <div class="course-progress" data-course-progress data-total="11"><span data-progress-label>0 of 11 chapters complete</span><div class="progress-track" aria-hidden="true"><span></span></div></div>
+        <p class="small muted">Progress is stored only in this browser on this device. You can use the course without enabling browser storage.</p>
+        <label class="sr-only" for="chapter-filter">Filter chapters</label><input id="chapter-filter" data-chapter-filter type="search" placeholder="Find a chapter…" style="width:100%;max-width:28rem;margin:1rem 0;padding:.7rem .8rem;border:1px solid var(--line);border-radius:8px;background:white">
+        <div class="roadmap">
+          <a class="chapter-card" data-chapter-card href="chapters/01-app-map.html"><span class="index">01</span><span><strong>Map the app before coding</strong><small>How desktop UI, API, database, and the development tools fit together.</small></span></a>
+          <a class="chapter-card" data-chapter-card href="chapters/02-html-css.html"><span class="index">02</span><span><strong>HTML, CSS, and the browser</strong><small>Structure a form and style a readable, responsive app screen.</small></span></a>
+          <a class="chapter-card" data-chapter-card href="chapters/03-js-data.html"><span class="index">03</span><span><strong>JavaScript values and data</strong><small>Variables, types, objects, arrays, and references to everyday app records.</small></span></a>
+          <a class="chapter-card" data-chapter-card href="chapters/04-js-logic.html"><span class="index">04</span><span><strong>Decisions, functions, and lists</strong><small>if/else, arrow functions, map/filter, and capacity rules.</small></span></a>
+          <a class="chapter-card" data-chapter-card href="chapters/05-async-json.html"><span class="index">05</span><span><strong>Async JavaScript and JSON</strong><small>Promises, async/await, HTTP, JSON, errors, and waiting safely.</small></span></a>
+          <a class="chapter-card" data-chapter-card href="chapters/06-react-components.html"><span class="index">06</span><span><strong>React components and props</strong><small>Turn data and HTML-like JSX into reusable pieces of interface.</small></span></a>
+          <a class="chapter-card" data-chapter-card href="chapters/07-react-state.html"><span class="index">07</span><span><strong>State, forms, and rendering</strong><small>Make the screen respond correctly to edits and backend data.</small></span></a>
+          <a class="chapter-card" data-chapter-card href="chapters/08-python-fastapi.html"><span class="index">08</span><span><strong>Python and FastAPI</strong><small>Define request models, validate input, and implement CRUD endpoints.</small></span></a>
+          <a class="chapter-card" data-chapter-card href="chapters/09-sqlite.html"><span class="index">09</span><span><strong>SQL and SQLite</strong><small>Model tables, keys, and changes that remain understandable over time.</small></span></a>
+          <a class="chapter-card" data-chapter-card href="chapters/10-tauri-rust.html"><span class="index">10</span><span><strong>Tauri and just-enough Rust</strong><small>Understand the desktop boundary, commands, permissions, and packaging.</small></span></a>
+          <a class="chapter-card" data-chapter-card href="chapters/11-capstone.html"><span class="index">11</span><span><strong>Build a small data-app feature</strong><small>Pseudocode → working UI → API → database → tests → audit.</small></span></a>
+        </div>
+      </section>
+
+      <section id="setup">
+        <div class="section-heading"><div><div class="eyebrow">Before you start</div><h2>Recommended learning setup</h2></div></div>
+        <div class="content-card" style="padding:1rem 1.2rem">
+          <p>You can read every page without installing anything. For practice, use a code editor such as VS Code, a current Node.js LTS release, Python 3, Git, and a terminal. Install Rust with <code>rustup</code> only when you reach Tauri; the official Tauri prerequisites page lists operating-system-specific dependencies. SQLite can be used through Python at first; a command-line client is a useful extra.</p>
+          <p>Keep one practice folder with small experiments. Do not start by wiring together the entire stack. First make a static screen, then add React state, then a single endpoint, then persistence.</p>
+          <div class="callout"><h2>One architecture fact worth remembering</h2><p>Tauri does not automatically run a FastAPI server or connect React to SQLite. In a Tauri app the frontend runs in a webview and Rust owns privileged desktop operations. If you keep FastAPI, treat it as a separate local service/sidecar whose startup, shutdown, network binding, and packaging must be designed. Chapter 10 compares that with using Rust commands and SQLite directly.</p></div>
+        </div>
+      </section>
+      <section>
+        <div class="section-heading"><div><div class="eyebrow">How to study</div><h2>Learn in loops, not in a marathon</h2></div></div>
+        <div class="content-card" style="padding:1rem 1.2rem">
+          <ol><li>Read one section and predict what the code will do.</li><li>Type it yourself and run it; change one value and observe what changes.</li><li>Explain each value’s shape: number, string, object, array, or response.</li><li>Do the exercise before reading the answer guidance.</li><li>Build one small feature end-to-end, then ask AI to explain code you do not understand.</li></ol>
+          <p>Expect several weeks of practice, not a single weekend, if you are learning the tools as well as the language. You can begin your MVP before you know every chapter: finish Chapters 1–7, then work through 8–11 just in time.</p>
+        </div>
+      </section>
+      <section>
+        <div class="section-heading"><div><div class="eyebrow">A note on scope</div><h2>What “learn properly” means here</h2></div></div>
+        <div class="content-card" style="padding:1rem 1.2rem"><p>This course teaches the core concepts used in a small data-driven desktop feature. It is not a complete computer-science curriculum, full Rust course, production security guide, or specification for any particular business domain. The references at the end of lessons are there for deeper practice. Use them after you can explain the examples in your own words.</p></div>
+      </section>
+    </div>
+  </main>
+  <footer class="footer">App Builder’s Workshop · A practical course for your first desktop-app vertical slice. Content is educational; validate production architecture and security choices for your project.</footer>
+  <script src="assets/site.js" defer></script>
+</body>
+</html>
