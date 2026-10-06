@@ -6,13 +6,14 @@
   <meta name="description" content="A practical beginner course in HTML, CSS, JavaScript, React, Python, FastAPI, SQLite, and Tauri for building desktop apps.">
   <title>Build a Desktop App — Beginner’s Coding Course</title>
   <link rel="icon" href="assets/course-mark.svg" type="image/svg+xml">
+  <script>(()=>{let saved=null;try{saved=localStorage.getItem("app-workshop-theme");}catch{}const theme=saved==="dark"||saved==="light"?saved:(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.dataset.theme=theme;})();</script>
   <link rel="stylesheet" href="assets/site.css">
 </head>
 <body data-course-home>
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="topbar"><div class="topbar-inner">
     <a class="brand" href="index.html"><img src="assets/course-mark.svg" alt=""><span>App Builder’s Workshop</span></a>
-    <nav class="topnav" aria-label="Main navigation"><a href="#roadmap">Chapters</a><a href="#setup">Setup</a><a class="nav-pill" href="chapters/01-app-map.html">Begin lesson 01 →</a></nav>
+    <nav class="topnav" aria-label="Main navigation"><a href="#roadmap">Chapters</a><a href="#setup">Setup</a><button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false">Dark mode: off</button><a class="nav-pill" href="chapters/01-app-map.html">Begin lesson 01 →</a></nav>
   </div></header>
   <div class="reading-progress" aria-hidden="true"><span data-reading-progress></span></div>
   <main id="main" class="layout">

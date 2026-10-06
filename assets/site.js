@@ -1,4 +1,23 @@
 (() => {
+  const themeKey = "app-workshop-theme";
+  const themeToggle = document.querySelector("[data-theme-toggle]");
+  const syncThemeToggle = () => {
+    if (!themeToggle) return;
+    const isDark = document.documentElement.dataset.theme === "dark";
+    themeToggle.setAttribute("aria-pressed", String(isDark));
+    themeToggle.textContent = isDark ? "Dark mode: on" : "Dark mode: off";
+  };
+  syncThemeToggle();
+  if (themeToggle) {
+    themeToggle.addEventListener("click", () => {
+      const nextTheme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+      document.documentElement.dataset.theme = nextTheme;
+      try { localStorage.setItem(themeKey, nextTheme); }
+      catch { /* Theme still works for this page if storage is unavailable. */ }
+      syncThemeToggle();
+    });
+  }
+
   const storageKey = "erp-course-completed-v1";
   const readCompleted = () => {
     try { return JSON.parse(localStorage.getItem(storageKey) || "[]"); }
