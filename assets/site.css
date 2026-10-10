@@ -33,3 +33,10 @@
 @media(max-width:850px){.theme-toggle{font-size:.78rem;padding:.35rem .58rem}}
 @media(max-width:520px){.theme-toggle{font-size:.74rem;padding:.32rem .48rem}.topnav .nav-pill{display:none}}
 @media print{:root[data-theme="dark"]{color-scheme:light;--ink:#111;--paper:#fff;--card:#fff;--muted:#444;--line:#bbb}:root[data-theme="dark"] body{background:#fff;color:#111}:root[data-theme="dark"] .outcomes,:root[data-theme="dark"] .callout,:root[data-theme="dark"] .exercise,:root[data-theme="dark"] .mistake,:root[data-theme="dark"] .answer,:root[data-theme="dark"] .lesson-nav a,:root[data-theme="dark"] .mark-complete{background:#fff;color:#111}}
+
+/* Backend course track */
+.module-list{display:flex;flex-direction:column;gap:1rem}.module-card{padding:1rem 1.25rem}.module-card h2{margin:.15rem 0 .4rem;color:var(--navy);font-size:1.22rem}.module-card p{margin:.4rem 0;color:var(--muted)}.module-card ol{margin:.6rem 0 .1rem;padding-left:1.4rem}.module-card li{margin:.35rem 0}.module-kicker{color:var(--teal);font-size:.72rem;font-weight:800;letter-spacing:.11em;text-transform:uppercase}.module-card a{font-weight:650}.module-card a:hover{text-decoration-thickness:2px}
+
+.backend-lesson h2{scroll-margin-top:5rem}.backend-lesson h3{scroll-margin-top:5rem}.lesson-tools{display:flex;flex-wrap:wrap;gap:.7rem 1rem;align-items:center;padding:.7rem .9rem;margin:0 0 1rem;border:1px solid var(--line);border-radius:9px;background:var(--card);font-size:.84rem}.lesson-tools a{font-weight:700;text-decoration:none}.lesson-tools span{color:var(--muted)}.backend-lesson pre{margin:1rem 0}.backend-lesson h2{border-top:1px solid var(--line)}:root[data-theme="dark"] .lesson-tools{background:var(--card)}
+
+.course-references{margin:2.4rem 0 0;padding-top:.8rem;border-top:1px solid var(--line)}.course-references h2{border:0!important;padding:0!important;margin:.6rem 0;color:var(--navy)}.course-references ol{padding-left:1.35rem}.course-references li{margin:.45rem 0;overflow-wrap:anywhere}.course-references a{font-size:.9rem;font-weight:650}.backend-lesson #capstone-step,.backend-lesson #references{scroll-margin-top:5.5rem}

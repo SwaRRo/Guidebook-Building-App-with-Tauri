@@ -19,17 +19,150 @@
 <a href="11-capstone.html"><span class="rail-number">11</span>Capstone: build one complete feature</a></aside><div class="main">
 <div class="crumbs"><a href="../index.html">Course home</a> / Chapter 10</div>
 <header class="lesson-header"><div class="eyebrow">Chapter 10 · Desktop integration</div><h1>Tauri, Rust, and the desktop boundary</h1><p class="lead">Tauri turns a web frontend into a desktop application. Learn the boundary between the webview and native host, plus enough Rust vocabulary to read a command.</p><div class="lesson-meta"><span>Estimated time: 50–75 min</span><span>Read, type, explain, practice</span></div></header>
-<section class="outcomes"><h2>By the end, you can…</h2><ul><li>Describe Tauri’s frontend, Rust host, and capability/permission boundary.</li><li>Read a small Rust command and understand its JavaScript caller.</li><li>Choose deliberately between a Rust-backed local API and a Python sidecar.</li></ul></section>
-<article class="lesson-content"><section id="section-1"><h2>What Tauri adds <a class="section-anchor" href="#section-1" aria-label="Link to What Tauri adds">¶</a></h2><p>A Tauri app typically has a web frontend rendered in a system webview and a Rust process that owns native desktop capabilities. The frontend is not automatically granted arbitrary filesystem or shell access. Tauri v2 uses capabilities and permissions to control which windows can call which plugin/commands.</p><p>A command is a Rust function deliberately exposed to the frontend. For example:</p><pre><code>#[tauri::command]
-fn greet(name: &amp;str) -&gt; String {
-    format!("Hello, {name}!")
-}</code></pre><p>Frontend code can call it using Tauri’s JavaScript API:</p><pre><code>import { invoke } from "@tauri-apps/api/core";
+<article class="lesson-content">
+<section class="outcomes" id="purpose">
+  <h2>Purpose and objectives</h2>
+  <p>Earlier chapters gave React state, FastAPI validation, and SQLite persistence. This chapter shows how that feature becomes a desktop application without pretending the layers disappear.</p>
+  <p>By the end, you should be able to:</p>
+  <ul>
+    <li>Describe the Tauri v2 webview, Rust host, command, capability, and permission mental model.</li>
+    <li>Read a small Rust function, including types, borrowing, and <code>Result</code>.</li>
+    <li>Trace one task record from a React button to trusted code and back.</li>
+    <li>Choose between direct Rust/local SQLite access and a separately packaged FastAPI sidecar.</li>
+    <li>Explain what packaging and code signing do, and what they do not do.</li>
+  </ul>
+</section>
 
-const greeting = await invoke("greet", { name: "Ada" });</code></pre><p>The argument names must match the command’s expected inputs. The result is delivered asynchronously to JavaScript as a Promise.</p></section>
-<section id="section-2"><h2>Just enough Rust to read a command <a class="section-anchor" href="#section-2" aria-label="Link to Just enough Rust to read a command">¶</a></h2><p>Rust has explicit types. <code>fn</code> starts a function declaration; <code>-&gt; String</code> describes the return type. <code>&amp;str</code> is a borrowed string slice, and <code>format!</code> constructs a new String. You will encounter structs for records, enums for a value with several named variants, and <code>Result&lt;T, E&gt;</code> for operations that can succeed or fail.</p><p>You do not need to become a Rust expert before using Tauri. Learn function signatures, structs, enums, ownership/borrowing at a conceptual level, error handling with Result, and how to read compiler messages. Use the Rust Book when you are ready to go deeper.</p></section>
-<section id="section-3"><h2>Choose the backend arrangement intentionally <a class="section-anchor" href="#section-3" aria-label="Link to Choose the backend arrangement intentionally">¶</a></h2><p><strong>Option A: Tauri/Rust owns local data access.</strong> The UI invokes Rust commands; Rust applies rules and uses an appropriate SQLite library/plugin. This can make a self-contained desktop deployment simpler because there is no separate HTTP service to start. You still need schema migrations, validation, error handling, and carefully scoped permissions.</p><p><strong>Option B: keep FastAPI as a sidecar.</strong> The UI calls a Python API over loopback, and FastAPI manages data. This can reuse Python skills or an existing service, but packaging is more involved: bundle the Python environment/executable, start and stop it with the desktop app, choose a safe loopback port or another IPC mechanism, handle failures, and avoid exposing an unauthenticated API to the local network.</p><p>For a multi-user remote ERP, an API may live on a real server and the desktop app becomes a client. That is a different deployment topology from a single-user offline desktop app. Pick the architecture based on who shares data, whether offline use matters, and how updates/backups will work.</p><div class="mistake"><h2>Permissions are not a TODO</h2><p>Do not grant broad shell or filesystem capabilities just to make a prototype work. Expose narrow commands such as “save note” rather than arbitrary SQL or arbitrary file access, validate at the trusted boundary, and follow the Tauri v2 security guide.</p></div></section>
-<section class="exercise" id="practice"><h2>Practice it</h2><p>Choose an architecture for each case: (1) an offline personal notes desktop app; (2) a business system used by a whole team from multiple computers; (3) an existing Python service with complex rules. State where data lives and which process validates writes.</p><details><summary><strong>Show answer guidance</strong></summary><div class="answer"><p>There is no universal answer. (1) often fits local SQLite accessed through a narrow Rust command; (2) usually needs a shared server database and authenticated API; (3) may keep FastAPI as a service/sidecar, but its lifecycle and access controls must be designed. The point is to articulate tradeoffs before generating code.</p></div></details></section>
-<section class="resource-list" id="references"><h2>References for deeper study</h2><p class="small muted">The lesson is self-contained; these are optional official or well-established references.</p><ul><li><a href="https://v2.tauri.app/" target="_blank" rel="noopener noreferrer">Tauri v2 docs <span aria-hidden="true">↗</span></a></li><li><a href="https://v2.tauri.app/develop/calling-rust/" target="_blank" rel="noopener noreferrer">Tauri v2: Calling the Rust backend from the frontend <span aria-hidden="true">↗</span></a></li><li><a href="https://v2.tauri.app/security/capabilities/" target="_blank" rel="noopener noreferrer">Tauri v2: Capabilities <span aria-hidden="true">↗</span></a></li><li><a href="https://doc.rust-lang.org/book/" target="_blank" rel="noopener noreferrer">The Rust Programming Language <span aria-hidden="true">↗</span></a></li></ul></section>
+<section id="section-1">
+  <h2>1. The desktop boundary: one window, several processes <a class="section-anchor" href="#section-1" aria-label="Link to The desktop boundary">¶</a></h2>
+  <p>Tauri is a desktop shell around a web frontend. React still renders JSX in a system webview and JavaScript manages loading, forms, and visible state; the difference is that a Rust host can perform selected desktop work.</p>
+  <p>Think of a guarded doorway rather than a magic connection:</p>
+  <ul>
+    <li><strong>React/webview:</strong> displays the task list, gathers a title, and asks for an operation.</li>
+    <li><strong>Tauri command/Rust host:</strong> receives a deliberately named request, validates trusted-side rules, and performs native work.</li>
+    <li><strong>SQLite:</strong> stores records. React does not open the SQLite file directly.</li>
+    <li><strong>FastAPI sidecar, if chosen:</strong> is another Python process. Tauri does not start or secure it automatically.</li>
+  </ul>
+  <div class="callout">
+    <h2>Boundary rule</h2>
+    <p>A frontend check such as “title is not blank” improves the experience, but it is not the security boundary. A command or API must check again because frontend code can be changed, interrupted, or compromised. Expose a narrow action such as <code>validate_task_title</code>, not “run arbitrary SQL.”</p>
+  </div>
+</section>
+
+<section id="section-2">
+  <h2>2. Vocabulary and the Tauri v2 mental model <a class="section-anchor" href="#section-2" aria-label="Link to Vocabulary and the Tauri v2 mental model">¶</a></h2>
+  <dl class="glossary">
+    <dt>Command</dt><dd>A Rust function marked with <code>#[tauri::command]</code> and registered with the application so JavaScript can invoke it.</dd>
+    <dt>Invoke</dt><dd>The frontend call that sends a command name and a JSON-shaped argument object and receives a Promise.</dd>
+    <dt>Capability</dt><dd>A named policy connecting one or more windows/webviews to allowed permissions, often stored under <code>src-tauri/capabilities</code>.</dd>
+    <dt>Permission</dt><dd>A specific allow/deny rule, such as a plugin operation or permission to run one named sidecar.</dd>
+    <dt>Scope</dt><dd>A restriction inside a permission, for example which paths, windows, or command arguments are acceptable.</dd>
+    <dt>Sidecar</dt><dd>A bundled external executable, commonly a Python API or CLI, launched as a child process of the desktop app.</dd>
+  </dl>
+  <p>In Tauri v2, capabilities say which webviews may use privileged surfaces. They reduce accidental exposure but cannot repair unsafe Rust or a broad scope, so review both command code and capability configuration.</p>
+</section>
+
+<section id="section-3">
+  <h2>3. Worked example: invoke a safe task command <a class="section-anchor" href="#section-3" aria-label="Link to Worked example">¶</a></h2>
+  <p>This command is deliberately <em>validation-only</em>: it returns a <code>TaskDraft</code> containing a cleaned title and does not claim to save a Task or generate a database ID. A real command must call a storage repository, then return the complete shared Task record with an authoritative ID and timestamp. Rust’s <code>Result</code> makes failure part of the function’s type rather than hiding it.</p>
+  <pre><span class="code-label">Rust — src-tauri/src/lib.rs</span><code>use serde::Serialize;
+
+#[derive(Serialize)]
+struct TaskDraft {
+    title: String,
+}
+
+#[tauri::command]
+fn validate_task_title(title: String) -&gt; Result&lt;TaskDraft, String&gt; {
+    let clean_title = title.trim();
+    if clean_title.is_empty() || clean_title.chars().count() &gt; 120 {
+        return Err("Title must contain 1–120 non-space characters".into());
+    }
+    Ok(TaskDraft {
+        title: clean_title.to_string(),
+    })
+}</code></pre>
+  <p><strong>Read it line by line.</strong> <code>struct TaskDraft</code> groups the cleaned title in a known shape. <code>String</code> owns text. The <code>derive</code> line lets Serde send the draft as JSON to JavaScript; it has no database ID because this example has not saved anything.</p>
+  <p>The attribute marks <code>validate_task_title</code> as callable, while <code>title: String</code> declares the input type. The return type is <code>Result&lt;TaskDraft, String&gt;</code>: success is <code>Ok(TaskDraft)</code>, failure is <code>Err(message)</code>. <code>trim</code> gives a view of the text without outside spaces; <code>to_string</code> creates owned text for the returned draft.</p>
+  <p>Registration is the second half of the feature. A command that is written but not registered is not callable:</p>
+  <pre><span class="code-label">Rust — register the command</span><code>tauri::Builder::default()
+    .invoke_handler(tauri::generate_handler![validate_task_title])
+    .run(tauri::generate_context!())
+    .expect("error while running Tauri application");</code></pre>
+  <p>The builder collects configuration; <code>generate_handler![validate_task_title]</code> adds the command to the invoke table; <code>run</code> starts the desktop loop. <code>expect</code> reports a startup failure, not a user-facing validation error.</p>
+  <p>Now the React handler can send the same field name:</p>
+  <pre><span class="code-label">JavaScript — React event handler</span><code>import { invoke } from "@tauri-apps/api/core";
+
+async function saveTask(title) {
+  try {
+    const task = await invoke("validate_task_title", { title });
+    console.log("Validated draft (not saved)", task);
+  } catch (error) {
+    console.error("Could not save task", error);
+  }
+}</code></pre>
+  <p><code>invoke</code> returns a Promise. The command name must match the registered Rust function, and the JavaScript object property <code>title</code> maps to Rust’s <code>title</code> argument. This example only previews a validated draft; do not add it to the saved-task list or show “Saved” until a repository has persisted it and the command returns the full Task.</p>
+</section>
+
+<section id="section-4">
+  <h2>4. Capabilities, permissions, and packaging <a class="section-anchor" href="#section-4" aria-label="Link to Capabilities, permissions, and packaging">¶</a></h2>
+  <p>Capabilities are configuration, usually JSON or TOML files in <code>src-tauri/capabilities</code>, that name windows and list permissions. For example, a main-window capability might allow a narrowly chosen core operation. Do not copy a broad permission list just because a generated example contains one; add the smallest permission required, then test the intended window.</p>
+  <p>Packaging turns the project into platform-specific bundles or installers by compiling the Rust host and frontend assets. It does not automatically create migrations, backups, a server, or authentication. Code signing identifies the publisher and helps detect tampering, but signed code can still contain a bug.</p>
+  <p>A sidecar must be bundled for each target architecture and explicitly permitted. Tauri’s shell plugin checks that rule before executing it. A Python API sidecar therefore needs a startup handshake, loopback-only binding, shutdown handling, crash reporting, and a rule that prevents arbitrary arguments. Never bind a local ERP sidecar to every network interface just to make the browser find it.</p>
+</section>
+
+<section id="section-5">
+  <h2>5. Choose direct Rust or a FastAPI sidecar <a class="section-anchor" href="#section-5" aria-label="Link to Choose direct Rust or a FastAPI sidecar">¶</a></h2>
+  <p><strong>Direct Tauri/Rust path:</strong> React invokes a Rust command; Rust validates and uses a SQLite library or Tauri database plugin. This is attractive for an offline, single-user task tracker because one desktop process can own local storage. It requires learning enough Rust to review queries, errors, migrations, and file locations.</p>
+  <p><strong>FastAPI sidecar path:</strong> React talks to a Python API over loopback, or Tauri mediates that call. FastAPI keeps the Python validation and database code from Chapter 8, which is useful when the rules already exist or Python is the team’s strength. In exchange, the packaged app contains an additional executable/environment and must coordinate process lifecycle, port selection, health checks, logs, upgrades, and permissions.</p>
+  <p>For multiple computers, local SQLite does not create shared data: use an authenticated server and treat the desktop app as a client. Decide from offline needs, sharing, backups, and updates—not from assuming Tauri chooses for you.</p>
+</section>
+
+<section class="mistake" id="mistakes">
+  <h2>Common mistake → symptom → fix</h2>
+  <ul>
+    <li><strong>Wrong command name or field.</strong> Symptom: the Promise rejects with an unknown command or missing argument. Fix: compare the string passed to <code>invoke</code>, the registered function, and the JSON key character for character.</li>
+    <li><strong>Forgot registration.</strong> Symptom: the Rust function compiles but the webview cannot invoke it. Fix: add it to <code>generate_handler!</code> and restart the dev process.</li>
+    <li><strong>Trusting only React validation.</strong> Symptom: blank or malformed records appear when a caller bypasses the form. Fix: validate again in Rust or FastAPI before writing.</li>
+    <li><strong>Confusing a sidecar with a library.</strong> Symptom: Python is missing, the port is occupied, or the child remains after exit. Fix: bundle the executable, grant only its shell permission, and design lifecycle behavior.</li>
+    <li><strong>Granting broad capabilities.</strong> Symptom: a frontend compromise has unnecessary filesystem or shell reach. Fix: narrow permissions and scopes, then test each window.</li>
+  </ul>
+</section>
+
+<section class="exercise" id="practice">
+  <h2>Beginner exercise</h2>
+  <p>Trace a user submitting <code>  Call supplier  </code>. Name (1) the React action, (2) boundary call, (3) trusted validation, (4) stored record, and (5) visible result. Then choose direct Rust or a FastAPI sidecar for an offline tracker and give one tradeoff.</p>
+  <details><summary><strong>Show a worked answer and explanation</strong></summary>
+    <div class="answer">
+      <ol>
+        <li>React’s submit handler reads the controlled input and may show a loading state.</li>
+        <li>It calls <code>invoke("validate_task_title", { title: "  Call supplier  " })</code>, or calls the chosen FastAPI endpoint if the project keeps Python.</li>
+        <li>The trusted layer trims the value, rejects an empty result, and applies the same rule even if the UI is bypassed.</li>
+        <li>The saved record is <code>{ title: "Call supplier", done: false }</code>, plus an ID and timestamp when persistence is implemented.</li>
+        <li>React adds the returned record to state on success; on failure it stops loading and displays a retryable message.</li>
+      </ol>
+      <p>Direct Rust with local SQLite is reasonable offline: fewer processes and no port lifecycle, but database code and errors move into Rust. A sidecar is valid when Python rules matter more; its executable, permissions, health check, and shutdown path become part of the feature.</p>
+    </div>
+  </details>
+</section>
+
+<section id="recap">
+  <h2>Recap and next-step bridge <a class="section-anchor" href="#recap" aria-label="Link to Recap and next-step bridge">¶</a></h2>
+  <p>Tauri v2 is a webview plus a native Rust host, connected through explicit commands and guarded by capabilities and permissions. Rust’s structs describe record shapes; types make inputs and outputs visible; <code>Result</code> makes success and failure part of the command contract. Packaging creates a distributable desktop bundle, while signing helps establish publisher identity. Direct Rust/SQLite and FastAPI sidecar architectures can both be correct, but their lifecycle, security, and update costs differ.</p>
+  <p>In the capstone, keep the same contract while building a complete task feature: list records, create one, mark it done, persist it, and test restart and failure behavior. Choose the integration path before wiring the button, then follow the record through UI state, validation, storage, response, and error display.</p>
+</section>
+
+<section class="resource-list" id="references">
+  <h2>References for deeper study</h2>
+  <p class="small muted">These official references are optional extensions; this lesson does not require memorizing them.</p>
+  <ul>
+    <li><a href="https://v2.tauri.app/develop/calling-rust/" target="_blank" rel="noopener noreferrer">Tauri v2: Calling Rust from the frontend <span aria-hidden="true">↗</span></a></li>
+    <li><a href="https://v2.tauri.app/security/capabilities/" target="_blank" rel="noopener noreferrer">Tauri v2: Capabilities and permissions <span aria-hidden="true">↗</span></a></li>
+    <li><a href="https://v2.tauri.app/develop/sidecar/" target="_blank" rel="noopener noreferrer">Tauri v2: Embedding external binaries (sidecars) <span aria-hidden="true">↗</span></a></li>
+    <li><a href="https://v2.tauri.app/distribute/" target="_blank" rel="noopener noreferrer">Tauri v2: Build and distribute <span aria-hidden="true">↗</span></a></li>
+    <li><a href="https://doc.rust-lang.org/book/" target="_blank" rel="noopener noreferrer">The Rust Programming Language (official Rust Book) <span aria-hidden="true">↗</span></a></li>
+  </ul>
+</section>
 </article>
 <button class="mark-complete" type="button" data-complete aria-pressed="false">Mark this chapter complete</button>
 <nav class="lesson-nav" aria-label="Previous and next chapters"><a href="09-sqlite.html"><small>Previous chapter</small><strong>← SQL and SQLite: persistent records</strong></a><a href="11-capstone.html"><small>Next chapter</small><strong>Capstone: build one complete feature →</strong></a></nav>

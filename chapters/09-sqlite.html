@@ -19,37 +19,177 @@
 <a href="11-capstone.html"><span class="rail-number">11</span>Capstone: build one complete feature</a></aside><div class="main">
 <div class="crumbs"><a href="../index.html">Course home</a> / Chapter 09</div>
 <header class="lesson-header"><div class="eyebrow">Chapter 09 · Data foundation</div><h1>SQL and SQLite: persistent records</h1><p class="lead">A database stores structured facts beyond the lifetime of one process. Learn relational tables, keys, CRUD queries, and how to preserve history instead of overwriting it.</p><div class="lesson-meta"><span>Estimated time: 50–70 min</span><span>Read, type, explain, practice</span></div></header>
-<section class="outcomes"><h2>By the end, you can…</h2><ul><li>Explain tables, rows, columns, primary keys, and foreign keys.</li><li>Write basic SELECT, INSERT, UPDATE, and DELETE statements.</li><li>Use parameterized queries and transactions from application code.</li></ul></section>
-<article class="lesson-content"><section id="section-1"><h2>Model entities and relationships <a class="section-anchor" href="#section-1" aria-label="Link to Model entities and relationships">¶</a></h2><p>A table represents one type of thing; each row is one record and each column is a field. A primary key uniquely identifies a row. A foreign key connects a row to another table. Relational design avoids storing the same changing fact in many places.</p><pre><code>CREATE TABLE tasks (
+<article class="lesson-content">
+<section class="lesson-section" id="purpose">
+  <h2>Purpose: make records outlive the process</h2>
+  <p>In Chapter 08, a FastAPI endpoint could validate a request and return JSON. That data still disappears if the process stops unless we store it. SQLite gives a small app a durable, relational file: rows remain after a restart, and SQL lets us ask precise questions about them.</p>
+  <div class="outcomes">
+    <h2>By the end, you can…</h2>
+    <ul>
+      <li>Model related app data with tables, primary keys, and foreign keys.</li>
+      <li>Use <code>SELECT</code>, <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, and a join.</li>
+      <li>Keep user values parameterized, group dependent writes in a transaction, and evolve a schema safely.</li>
+      <li>Explain which layer owns database access in a React + FastAPI + Tauri app.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="lesson-section" id="mental-model">
+  <h2>Vocabulary and the relational mental model</h2>
+  <p>Think of a database as several carefully labeled spreadsheets, plus rules that keep them consistent. A <strong>table</strong> stores one kind of entity; a <strong>row</strong> is one entity; a <strong>column</strong> is one attribute; and a <strong>schema</strong> is the database’s structure and constraints.</p>
+  <dl class="glossary">
+    <dt>Primary key</dt><dd>A value that uniquely identifies a row. An integer <code>id</code> is a common choice.</dd>
+    <dt>Foreign key</dt><dd>A column whose value must refer to a key in another table. It expresses a relationship.</dd>
+    <dt>CRUD</dt><dd>Create, Read, Update, Delete: the four everyday data operations.</dd>
+    <dt>Join</dt><dd>A query that combines related rows, usually by matching a primary key to a foreign key.</dd>
+    <dt>Transaction</dt><dd>A group of changes treated as one unit: commit all of them, or roll them all back.</dd>
+    <dt>Migration</dt><dd>A deliberate, repeatable schema change, such as adding a column to an existing database.</dd>
+  </dl>
+  <p>Good relational modeling stores a fact once and connects to it. For our task list, <code>tasks</code> owns the task title and status. <code>task_events</code> owns a history of actions. Repeating the title in every event would create stale copies when the title changes.</p>
+</section>
+
+<section class="lesson-section" id="worked-example">
+  <h2>Worked example: tasks and their event history</h2>
+  <p>Start with tables that state the rules. <code>NOT NULL</code> means a value is required. <code>DEFAULT</code> supplies a value when the application omits it. <code>REFERENCES tasks(id)</code> says that an event cannot point at a task that does not exist.</p>
+  <pre><code><span class="code-label">SQL · schema.sql</span>PRAGMA foreign_keys = ON;
+
+CREATE TABLE IF NOT EXISTS tasks (
   id INTEGER PRIMARY KEY,
-  title TEXT NOT NULL,
-  done INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  title TEXT NOT NULL CHECK (length(title) BETWEEN 1 AND 120),
+  done INTEGER NOT NULL DEFAULT 0 CHECK (done IN (0, 1)),
+  created_at TEXT NOT NULL
 );
 
-CREATE TABLE task_events (
+CREATE TABLE IF NOT EXISTS task_events (
   id INTEGER PRIMARY KEY,
   task_id INTEGER NOT NULL REFERENCES tasks(id),
   event_type TEXT NOT NULL,
   happened_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);</code></pre><p>The second table records events connected to a task. It is often better to preserve a history record than overwrite information when auditability matters.</p></section>
-<section id="section-2"><h2>The four CRUD operations <a class="section-anchor" href="#section-2" aria-label="Link to The four CRUD operations">¶</a></h2><p>SQL names the operation and the table. Use an explicit column list for inserts.</p><pre><code>-- Read
-SELECT id, title, done FROM tasks ORDER BY id DESC;
+);</code></pre>
+  <p>The pragma enables foreign-key checks for this SQLite connection; enable it whenever you open the database. SQLite represents a Boolean simply as integer values, so <code>done</code> uses <code>0</code> for false and <code>1</code> for true. The event table has its own key because each event is a distinct record, while <code>task_id</code> is the link back to its parent task.</p>
 
--- Create
-INSERT INTO tasks (title) VALUES ('Prepare report');
+  <h3>Create and read</h3>
+  <pre><code><span class="code-label">SQL · CRUD</span>INSERT INTO tasks (title, done, created_at) VALUES (?, ?, ?);
 
--- Update
-UPDATE tasks SET done = 1 WHERE id = 7;
+SELECT id, title, done
+FROM tasks
+WHERE done = 0
+ORDER BY created_at DESC;
 
--- Delete
-DELETE FROM tasks WHERE id = 7;</code></pre><p>Always check that an update/delete has a suitable condition. Without <code>WHERE</code>, you may change every row. SQLite is embedded and stores data in a file, but concurrent access, migrations, backups, and app lifecycle still deserve thought.</p></section>
-<section id="section-3"><h2>Pass data safely and group related writes <a class="section-anchor" href="#section-3" aria-label="Link to Pass data safely and group related writes">¶</a></h2><p>Do not build SQL by joining untrusted text into a string. Use parameterized statements so the database treats values as data.</p><pre><code>cursor.execute(
-    "INSERT INTO tasks (title) VALUES (?)",
-    (title,)
-)</code></pre><p>Use a transaction when several writes must succeed or fail together. For example, create a task and insert its first history event in one transaction. Otherwise you could end with a task that has no matching event.</p><p>Enable foreign-key enforcement where your SQLite connection requires it, create schema migrations as the application evolves, and decide where the database file lives. A packaged Tauri app should use the app’s data directory, not assume its current working directory is writable.</p><div class="note-box"><strong>Useful mental model:</strong> a database is durable shared state for your application, not a magic file that automatically validates every business rule.</div></section>
-<section class="exercise" id="practice"><h2>Practice it</h2><p>Design a tiny notes database with notes and note_tags. Identify each primary key and foreign key. Write a SELECT query that lists a note’s title and its tags. Then write a parameterized INSERT example in the language you plan to use.</p><details><summary><strong>Show answer guidance</strong></summary><div class="answer"><p>A note_tags table can contain note_id and tag_id as foreign keys; a composite uniqueness rule can prevent duplicate links. For a learning project, start with one table and a primary key before modeling many-to-many relationships. The important habit is to keep parameter values separate from SQL text.</p></div></details></section>
-<section class="resource-list" id="references"><h2>References for deeper study</h2><p class="small muted">The lesson is self-contained; these are optional official or well-established references.</p><ul><li><a href="https://www.sqlite.org/docs.html" target="_blank" rel="noopener noreferrer">SQLite documentation <span aria-hidden="true">↗</span></a></li><li><a href="https://www.sqlite.org/whentouse.html" target="_blank" rel="noopener noreferrer">SQLite: Appropriate Uses <span aria-hidden="true">↗</span></a></li><li><a href="https://sqlbolt.com/" target="_blank" rel="noopener noreferrer">SQLBolt interactive lessons <span aria-hidden="true">↗</span></a></li></ul></section>
+INSERT INTO task_events (task_id, event_type)
+VALUES (1, 'created');</code></pre>
+  <p>The <code>INSERT</code> names the supplied columns; SQLite generates the ID and supplies the <code>done</code> default if that column is omitted. The backend explicitly assigns <code>created_at</code> as a UTC timestamp, as shown in the Python helper below. The <code>SELECT</code> returns only unfinished tasks and sorts newest first. The second insert records what happened without overwriting the task itself. In real code, do not assume the new task is always id 1; use the ID returned by the insert.</p>
+
+  <h3>Update, delete, and join</h3>
+  <pre><code><span class="code-label">SQL · update, delete, join</span>UPDATE tasks
+SET done = 1
+WHERE id = 1;
+
+DELETE FROM task_events
+WHERE task_id = 1;
+
+SELECT tasks.title, task_events.event_type, task_events.happened_at
+FROM tasks
+JOIN task_events ON task_events.task_id = tasks.id
+WHERE tasks.id = 1
+ORDER BY task_events.happened_at;</code></pre>
+  <p>The <code>WHERE</code> clause limits the update or delete to one task or its events. The join starts with a task row, matches its <code>id</code> to the event’s <code>task_id</code>, and returns a readable history. A join does not copy data into a new table; it combines matching rows for this result only.</p>
+</section>
+
+<section class="lesson-section" id="python">
+  <h2>Parameters and transactions in Python</h2>
+  <p>Chapter 08’s FastAPI route is a natural place to call a repository function. The browser sends JSON to FastAPI; Python validates it and talks to SQLite. React does <strong>not</strong> open the SQLite file directly.</p>
+  <pre><span class="code-label">Python · repository write</span><code>import sqlite3
+from contextlib import closing
+from datetime import datetime, timezone
+
+def add_task(db_path: str, title: str) -&gt; int:
+    clean_title = title.strip()
+    if not clean_title or len(clean_title) &gt; 120:
+        raise ValueError("title must contain 1–120 non-space characters")
+    created_at = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+    with closing(sqlite3.connect(db_path)) as connection:
+        connection.execute("PRAGMA foreign_keys = ON")
+        with connection:  # commits on success; rolls back on an exception
+            cursor = connection.execute(
+                "INSERT INTO tasks (title, done, created_at) VALUES (?, ?, ?)",
+                (clean_title, 0, created_at),
+            )
+            task_id = cursor.lastrowid
+            connection.execute(
+                "INSERT INTO task_events (task_id, event_type) VALUES (?, ?)",
+                (task_id, "created"),
+            )
+    # closing(...) closes the connection; with connection handled the transaction.
+    return task_id</code></pre>
+  <p><code>closing(...)</code> guarantees that the connection closes. The nested <code>with connection:</code> manages only the transaction: it commits on success and rolls back on an exception. The question marks are placeholders; the tuple supplies values separately, so a title containing quotes is still data rather than executable SQL. <code>lastrowid</code> captures the id SQLite assigned.</p>
+  <p>The two inserts share one connection and one transaction. If the event insert fails, leaving the block raises an error and the context manager rolls back the pending work. If the block completes, it commits. This prevents a half-created task. For a read, use <code>connection.execute</code> with parameters in the same way, then fetch rows. Never build SQL by concatenating a form value into the query.</p>
+  <div class="callout">
+    <h2>Choose the boundary deliberately</h2>
+    <p>One valid learning architecture is React → FastAPI sidecar → SQLite. The Python process owns validation and database access, but its startup, shutdown, loopback-only binding, permissions, and packaging must be designed; exposing a local API more widely than necessary increases the security surface. Another valid desktop architecture is React → Tauri command → Rust SQLite code, avoiding a Python process but requiring carefully scoped Tauri capabilities and Rust-side validation. Tauri does not automatically host FastAPI, and neither option makes direct React-to-SQLite access safe or available by magic.</p>
+  </div>
+</section>
+
+<section class="lesson-section" id="persistence-schema">
+  <h2>Persistence and schema change</h2>
+  <p>Pass an explicit database path into the repository. A relative <code>tasks.db</code> path can silently create a different file when the working directory changes. During local web development you can set <code>APP_DATA_DIR=./dev-data</code>; a packaged FastAPI sidecar should receive the platform-specific user-data directory from its Tauri host. A direct Rust implementation should resolve the equivalent directory through Tauri’s path API.</p>
+  <p>A schema is code too. If version 1 has <code>title</code> and version 2 needs a due date, add a migration rather than silently assuming every old file is empty:</p>
+  <pre><code><span class="code-label">SQL · migration idea</span>ALTER TABLE tasks ADD COLUMN due_date TEXT;</code></pre>
+  <p>Run this once, record that it ran (for example, with a schema-version table), and test it against a copy of a real older database. Adding a nullable column is a friendly first migration. More complex changes—such as splitting a column or changing a constraint—usually require creating a new table, copying and checking data, renaming tables, and doing the work in a transaction. Back up before migrations; “it worked on a fresh database” is not proof that it works on existing data.</p>
+</section>
+
+<section class="lesson-section" id="mistakes">
+  <h2>Common mistake → symptom → fix</h2>
+  <div class="mistake">
+    <h2>Missing <code>WHERE</code></h2>
+    <p><strong>Symptom:</strong> every task becomes done, or every row disappears. <strong>Fix:</strong> write the intended <code>SELECT</code> first with the same condition, inspect the matching ids, then run the update/delete inside a tested function. Require an id argument rather than accepting a vague command.</p>
+  </div>
+  <div class="mistake">
+    <h2>String-building a query</h2>
+    <p><strong>Symptom:</strong> names containing apostrophes break the query, or untrusted input changes what it does. <strong>Fix:</strong> keep SQL text fixed and pass values through <code>?</code> placeholders.</p>
+  </div>
+  <div class="mistake">
+    <h2>Foreign keys assumed but not enabled</h2>
+    <p><strong>Symptom:</strong> orphan events appear even though the table says <code>REFERENCES</code>. <strong>Fix:</strong> execute <code>PRAGMA foreign_keys = ON</code> on every connection and test an invalid <code>task_id</code> deliberately.</p>
+  </div>
+  <div class="mistake">
+    <h2>Using an in-memory or wrong relative path</h2>
+    <p><strong>Symptom:</strong> records “disappear” after restart or differ between launch locations. <strong>Fix:</strong> use a deliberate absolute application-data path and log which database file is open during development.</p>
+  </div>
+</section>
+
+<section class="exercise" id="practice">
+  <h2>Beginner exercise</h2>
+  <p>Write a query that lists unfinished task titles with their event types. Then sketch a Python function that marks task id 7 done and records a <code>completed</code> event as one transaction. What should happen if the event insert fails?</p>
+  <details><summary><strong>Show the worked answer and explanation</strong></summary>
+    <div class="answer">
+      <pre><code><span class="code-label">SQL · answer</span>SELECT tasks.title, task_events.event_type
+FROM tasks
+JOIN task_events ON task_events.task_id = tasks.id
+WHERE tasks.done = 0
+ORDER BY tasks.id;</code></pre>
+      <p>The join connects the two tables, and <code>WHERE tasks.done = 0</code> filters the parent rows. A Python solution would open one connection, run <code>UPDATE tasks SET done = 1 WHERE id = ?</code> with <code>(7,)</code>, then run <code>INSERT INTO task_events (task_id, event_type) VALUES (?, ?)</code> with <code>(7, "completed")</code> inside the same <code>with</code> block. If the second statement fails, the first change rolls back, so the task is not falsely marked complete without its history.</p>
+    </div>
+  </details>
+</section>
+
+<section class="lesson-section" id="recap">
+  <h2>Recap and next-step bridge</h2>
+  <p>Tables model entities, primary keys identify rows, and foreign keys express valid relationships. CRUD changes data; joins read related data together. Parameters protect values and handle punctuation safely. Transactions keep related writes all-or-nothing. A file-backed SQLite database persists across process restarts, while migrations let the schema evolve without discarding existing records.</p>
+  <p>Next, Chapter 10 draws the desktop boundary: how a React webview reaches privileged Tauri/Rust commands, how a FastAPI sidecar differs from those commands, and why permissions, process lifecycle, and the database path belong in the architecture rather than being hidden assumptions.</p>
+</section>
+
+<section class="resource-list" id="references">
+  <h2>Official references for deeper study</h2>
+  <p class="small muted">These links are optional extensions; the examples above are intended to stand alone.</p>
+  <ul>
+    <li><a href="https://sqlite.org/foreignkeys.html" target="_blank" rel="noopener noreferrer">SQLite Foreign Key Support <span aria-hidden="true">↗</span></a></li>
+    <li><a href="https://docs.python.org/3/library/sqlite3.html" target="_blank" rel="noopener noreferrer">Python <code>sqlite3</code> documentation: placeholders and transactions <span aria-hidden="true">↗</span></a></li>
+    <li><a href="https://v2.tauri.app/concept/architecture/" target="_blank" rel="noopener noreferrer">Tauri architecture: webview and Rust message passing <span aria-hidden="true">↗</span></a></li>
+    <li><a href="https://v2.tauri.app/develop/sidecar/" target="_blank" rel="noopener noreferrer">Tauri sidecars: embedding external binaries <span aria-hidden="true">↗</span></a></li>
+  </ul>
+</section>
 </article>
 <button class="mark-complete" type="button" data-complete aria-pressed="false">Mark this chapter complete</button>
 <nav class="lesson-nav" aria-label="Previous and next chapters"><a href="08-python-fastapi.html"><small>Previous chapter</small><strong>← Python refresh and FastAPI endpoints</strong></a><a href="10-tauri-rust.html"><small>Next chapter</small><strong>Tauri, Rust, and the desktop boundary →</strong></a></nav>

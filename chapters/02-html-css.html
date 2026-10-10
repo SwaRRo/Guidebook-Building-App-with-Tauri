@@ -19,26 +19,142 @@
 <a href="11-capstone.html"><span class="rail-number">11</span>Capstone: build one complete feature</a></aside><div class="main">
 <div class="crumbs"><a href="../index.html">Course home</a> / Chapter 02</div>
 <header class="lesson-header"><div class="eyebrow">Chapter 02 · Foundations</div><h1>HTML, CSS, and the browser</h1><p class="lead">Before React, learn the browser’s basic materials: semantic markup, forms, and styles. React will still use these same browser elements.</p><div class="lesson-meta"><span>Estimated time: 35–50 min</span><span>Read, type, explain, practice</span></div></header>
-<section class="outcomes"><h2>By the end, you can…</h2><ul><li>Build a meaningful HTML page using headings, labels, inputs, buttons, and lists.</li><li>Explain selectors, the box model, and a responsive layout.</li><li>Recognize accessibility habits that matter in forms.</li></ul></section>
-<article class="lesson-content"><section id="section-1"><h2>HTML describes meaning and structure <a class="section-anchor" href="#section-1" aria-label="Link to HTML describes meaning and structure">¶</a></h2><p>An HTML element usually has an opening tag, content, and a closing tag. A browser parses elements into a document tree. Choose tags for meaning: <code>&lt;main&gt;</code> for primary content, <code>&lt;nav&gt;</code> for navigation, <code>&lt;form&gt;</code> for input, and <code>&lt;button&gt;</code> for an action.</p><pre><code>&lt;form&gt;
-  &lt;label for="task-title"&gt;Task title&lt;/label&gt;
-  &lt;input id="task-title" name="title" required&gt;
-  &lt;button type="submit"&gt;Save task&lt;/button&gt;
-&lt;/form&gt;</code></pre><p>The <code>for</code> value on a label matches the input’s <code>id</code>. This makes the label clickable and gives assistive technology a clear name for the field. A placeholder is not a replacement for a label.</p></section>
-<section id="section-2"><h2>CSS is a set of presentation rules <a class="section-anchor" href="#section-2" aria-label="Link to CSS is a set of presentation rules">¶</a></h2><p>CSS rules select elements and assign properties. A class is a reusable label; an ID should usually identify one unique element. The <strong>cascade</strong> decides which matching rule wins based on origin, importance, specificity, and order. Avoid solving every style conflict with increasingly specific selectors.</p><pre><code>.task-form {
+<article class="lesson-content">
+<section class="lesson-section" id="purpose">
+  <h2>Purpose: build a screen the browser can understand</h2>
+  <p>HTML, CSS, and the browser are the first layer of the app. HTML gives a task screen meaning and order. CSS controls its spacing and layout. The browser (or a desktop webview) parses both and turns them into pixels and interactive controls. React, which arrives in Chapter 06, does not replace these foundations; it creates the same kinds of elements from JavaScript.</p>
+  <p>By the end of this lesson, you should be able to:</p>
+  <ul>
+    <li>Choose semantic elements such as <code>&lt;main&gt;</code>, <code>&lt;form&gt;</code>, <code>&lt;label&gt;</code>, and <code>&lt;button&gt;</code> for their meaning.</li>
+    <li>Explain how a label is connected to an input and why native controls help keyboard and assistive-technology users.</li>
+    <li>Use the CSS box model, Grid or Flexbox, and a media query to keep a task screen usable at different widths.</li>
+    <li>Describe the path from source HTML and CSS to a browser/webview screen, without confusing the UI with the API or database.</li>
+  </ul>
+</section>
+
+<section class="lesson-section" id="vocabulary">
+  <h2>Vocabulary and the browser mental model</h2>
+  <dl class="glossary">
+    <dt>Element</dt><dd>A piece of HTML with a role, such as a heading, form, input, or list item.</dd>
+    <dt>Semantic</dt><dd>Meaningful to people and tools. A <code>&lt;button&gt;</code> says “activate an action”; a generic <code>&lt;div&gt;</code> says nothing by itself.</dd>
+    <dt>Selector</dt><dd>The part of a CSS rule that chooses which elements receive styles, such as <code>.task-form</code>.</dd>
+    <dt>Box model</dt><dd>The layers around an element: content, padding, border, and margin.</dd>
+    <dt>Viewport</dt><dd>The visible area in a browser window or webview. Its width changes when the window or device changes.</dd>
+  </dl>
+  <p>Think of a page as a small pipeline. The browser reads HTML into a document tree. It reads CSS into style rules, matches those rules to the tree, calculates each box’s size and position, and paints the result. A click or key press creates an event. Native controls already know useful behavior; JavaScript can listen and add application behavior later.</p>
+  <div class="callout">
+    <h2>Source order is a usability feature</h2>
+    <p>Write content in the order it should be read: page heading, form, then task list. CSS can place columns side by side, but a screen reader, keyboard user, and narrow screen still benefit from a sensible HTML order. Use ARIA only when native HTML cannot express the meaning; do not use it to disguise the wrong element.</p>
+  </div>
+</section>
+
+<section class="lesson-section" id="worked-example">
+  <h2>Worked example: a semantic task form</h2>
+  <p>Start with structure before decoration. This example is a static version of the “create task” screen from the course architecture.</p>
+  <pre><span class="code-label">HTML</span><code>&lt;main&gt;
+  &lt;h1&gt;Tasks&lt;/h1&gt;
+  &lt;form class="task-form"&gt;
+    &lt;label for="task-title"&gt;Task title&lt;/label&gt;
+    &lt;input id="task-title" name="title" type="text" required&gt;
+
+    &lt;label for="task-priority"&gt;Priority&lt;/label&gt;
+    &lt;select id="task-priority" name="priority"&gt;
+      &lt;option value="normal"&gt;Normal&lt;/option&gt;
+      &lt;option value="high"&gt;High&lt;/option&gt;
+    &lt;/select&gt;
+
+    &lt;button type="submit"&gt;Save task&lt;/button&gt;
+  &lt;/form&gt;
+  &lt;section aria-labelledby="task-list-heading"&gt;
+    &lt;h2 id="task-list-heading"&gt;Current tasks&lt;/h2&gt;
+    &lt;ul&gt;
+      &lt;li&gt;Review weekly stock report — High&lt;/li&gt;
+      &lt;li&gt;Email supplier — Normal&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/section&gt;
+&lt;/main&gt;</code></pre>
+  <p>Read the data flow line by line. <code>&lt;main&gt;</code> identifies the page’s primary content, and <code>&lt;h1&gt;</code> names the screen. The form groups controls that will eventually be submitted. The label’s <code>for</code> value exactly matches the input’s <code>id</code>; clicking “Task title” therefore focuses the input, and assistive technology can announce its name. The <code>name</code> values describe the keys a submission would carry. <code>required</code> lets the browser reject an empty title before application code runs.</p>
+  <p>The select gives a finite choice instead of asking the user to type a value with unknown spelling. The explicit <code>type="submit"</code> documents the button’s job. The list uses <code>&lt;ul&gt;</code> and <code>&lt;li&gt;</code> because these are repeated items, not a collection of unrelated boxes. <code>aria-labelledby</code> connects the section to its visible heading; in many cases the native heading and section structure are already enough, so add attributes deliberately.</p>
+
+  <h3>Style the structure, not each individual element</h3>
+  <pre><span class="code-label">CSS</span><code>* {
+  box-sizing: border-box;
+}
+
+.task-form {
   display: grid;
   gap: 0.75rem;
   max-width: 34rem;
 }
 
-.task-form input {
-  padding: 0.7rem;
-  border: 1px solid #9aabb4;
-  border-radius: 0.4rem;
-}</code></pre><p>The box model is content + padding + border + margin. Most projects set <code>box-sizing: border-box</code> so declared widths include padding and border. Use Flexbox for one-dimensional alignment and CSS Grid for rows and columns. Add responsive rules so controls remain usable on narrow screens.</p></section>
-<section id="section-3"><h2>What the browser does <a class="section-anchor" href="#section-3" aria-label="Link to What the browser does">¶</a></h2><p>The browser loads an HTML document, downloads linked CSS and JavaScript, builds the document and style trees, and paints pixels. When you click a button, the browser fires an event; JavaScript can respond. Developer Tools let you inspect the DOM, CSS rules, console errors, and network requests.</p><p>React does not replace HTML or the browser. JSX looks like markup, but it is JavaScript syntax that React turns into browser UI. Attributes like HTML <code>class</code> become React’s <code>className</code>; a React component returns markup-like JSX.</p><div class="mistake"><h2>Common mistake</h2><p>Do not use a clickable <code>&lt;div&gt;</code> when a button is the correct control. Native buttons support keyboard activation and communicate intent to assistive technology.</p></div></section>
-<section class="exercise" id="practice"><h2>Practice it</h2><p>Create a static page with a heading “Tasks,” a labeled title field, a priority select, a Save button, and a list with two example rows. Use semantic elements and style the form with a small amount of CSS.</p><details><summary><strong>Show answer guidance</strong></summary><div class="answer"><p>Check that every field has a visible label, the button is a real button, headings follow a sensible order, and the page remains readable when the viewport is narrow. Do not add React yet; this lesson is about browser fundamentals.</p></div></details></section>
-<section class="resource-list" id="references"><h2>References for deeper study</h2><p class="small muted">The lesson is self-contained; these are optional official or well-established references.</p><ul><li><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content" target="_blank" rel="noopener noreferrer">MDN: Structuring content with HTML <span aria-hidden="true">↗</span></a></li><li><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Styling_basics" target="_blank" rel="noopener noreferrer">MDN: CSS first steps <span aria-hidden="true">↗</span></a></li><li><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms" target="_blank" rel="noopener noreferrer">MDN: HTML forms <span aria-hidden="true">↗</span></a></li></ul></section>
+.task-form input,
+.task-form select,
+.task-form button {
+  min-height: 2.75rem;
+  padding: 0.6rem 0.7rem;
+}
+
+@media (max-width: 40rem) {
+  .task-form button {
+    width: 100%;
+  }
+}</code></pre>
+  <p>The universal rule makes declared widths include padding and borders, which avoids many surprising overflows. Grid gives the form one vertical track and a consistent gap. The grouped selector gives the three controls a comfortable touch target without repeating the same declarations. The maximum width keeps lines and controls readable on a large screen. The media query changes only when the viewport is narrow; it makes the primary action easy to tap without pretending that every phone has the same pixel width.</p>
+</section>
+
+<section class="lesson-section" id="layout-and-accessibility">
+  <h2>Layout, responsiveness, and accessibility in practice</h2>
+  <p>Use Grid when you are arranging rows and columns, and Flexbox when you are aligning items along one direction, such as a toolbar. Prefer flexible units such as <code>rem</code>, percentages, <code>minmax()</code>, and <code>max-width</code> over a fixed canvas. Test by narrowing the window until content would otherwise become cramped; that content failure is a better breakpoint than a device-name guess.</p>
+  <p>Accessibility is not a separate polish phase. Keep visible labels, a logical heading order, sufficient color contrast, and a visible keyboard focus indicator. A link navigates to a location; a button performs an action. Do not turn a clickable <code>&lt;div&gt;</code> into a fake button: it will not reliably receive focus or respond to the expected keys. Do not use placeholder text as the only label because it disappears while typing. Browser validation is helpful feedback, but a future API must validate again because users can bypass a browser UI.</p>
+  <div class="note-box">
+    <strong>Inspect, do not guess.</strong>
+    <p>In browser Developer Tools, inspect an element to see its DOM, matched CSS rules, computed box dimensions, and event-related messages. The “responsive” device toolbar is useful for testing width, but keyboard testing with Tab and Enter/Space is equally important.</p>
+  </div>
+</section>
+
+<section class="lesson-section" id="app-connection">
+  <h2>Connection to the course app: screen versus storage</h2>
+  <p>In this chapter, the form is only a screen. A user enters a title, the browser represents that value in an input control, and a submit event can later be handled by JavaScript. Chapter 03 teaches the JavaScript object that could represent the record, and Chapters 05 and 08 explain sending a request and validating it.</p>
+  <p>Keep the boundaries clear. React renders the interface inside a browser or Tauri webview; React does not query SQLite directly. One possible later path is UI → FastAPI sidecar → SQLite. FastAPI would be a separate local process with startup, shutdown, loopback networking, and packaging decisions. Another path is UI → Tauri command → Rust code → SQLite, with Tauri owning the privileged desktop operation. These are distinct choices with different lifecycle and security tradeoffs. This HTML lesson teaches the UI contract without assuming either backend exists.</p>
+</section>
+
+<section class="mistake" id="mistakes">
+  <h2>Common mistake → symptom → fix</h2>
+  <ul>
+    <li><strong>Generic clickable element →</strong> no keyboard focus or activation → use a native <code>&lt;button&gt;</code> for an action and style it with CSS.</li>
+    <li><strong>Label and input IDs do not match →</strong> clicking the label does nothing and the field has a weak accessible name → make <code>for="task-title"</code> and <code>id="task-title"</code> identical.</li>
+    <li><strong>Fixed width plus padding →</strong> a control spills beyond the viewport → use <code>box-sizing: border-box</code>, flexible widths, and a tested breakpoint.</li>
+    <li><strong>CSS selector is too specific →</strong> a small change breaks an unrelated rule → prefer a reusable class and inspect the cascade before adding more selectors.</li>
+  </ul>
+</section>
+
+<section class="exercise" id="practice">
+  <h2>Beginner exercise</h2>
+  <p>Build a static “New task” screen. Include a page heading, a labeled title input, a labeled priority select with “Normal” and “High,” a submit button, and a list with two tasks. Add a CSS class that uses Grid, keeps the form under 34rem, and makes the button full width below 40rem. Then use only the keyboard to reach and submit the form.</p>
+  <p>Before checking the answer, say what each element means and predict what happens if the title is empty.</p>
+</section>
+
+<section class="answer" id="worked-answer">
+  <h2>Worked answer and explanation</h2>
+  <p>A correct answer uses the HTML pattern above, changing the heading to “New task” if that is your screen name. The input must have a visible label, matching <code>for</code>/<code>id</code>, a useful <code>name</code>, and <code>required</code>. The button is <code>type="submit"</code>, not a styled paragraph. The two task rows belong in a list. The CSS needs <code>display: grid</code>, a gap, a readable <code>max-width</code>, and a narrow-viewport rule. With an empty required input, the browser blocks the submission and reports that the field needs a value; that is client-side feedback, not database storage. If your keyboard focus disappears, check that you did not remove the outline without providing a visible replacement.</p>
+</section>
+
+<section class="lesson-section" id="recap">
+  <h2>Recap and next-step bridge</h2>
+  <p>HTML supplies meaning and native behavior. CSS selects boxes, applies the cascade, and lays them out responsively. The browser parses, styles, lays out, paints, and dispatches events; a Tauri webview follows the same UI model inside a desktop window. Accessible forms use real controls, explicit labels, logical source order, and clear focus. The task screen can collect a value, but it does not decide where that value is persisted.</p>
+  <p>Next, Chapter 03 turns the form’s values into JavaScript data: strings, objects, and arrays. You will learn to describe one task as data before you make the screen dynamic.</p>
+</section>
+
+<section class="resource-list" id="references">
+  <h2>References for deeper study</h2>
+  <p class="small muted">These maintained references are optional extensions; the lesson is self-contained.</p>
+  <ul>
+    <li><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Accessibility/HTML" target="_blank" rel="noopener noreferrer">MDN: HTML: A good basis for accessibility <span aria-hidden="true">↗</span></a></li>
+    <li><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content/HTML_forms" target="_blank" rel="noopener noreferrer">MDN: Forms and buttons in HTML <span aria-hidden="true">↗</span></a></li>
+    <li><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/CSS_layout/Responsive_Design" target="_blank" rel="noopener noreferrer">MDN: Responsive web design <span aria-hidden="true">↗</span></a></li>
+    <li><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Styling_basics/Box_model" target="_blank" rel="noopener noreferrer">MDN: The box model <span aria-hidden="true">↗</span></a></li>
+  </ul>
+</section>
 </article>
 <button class="mark-complete" type="button" data-complete aria-pressed="false">Mark this chapter complete</button>
 <nav class="lesson-nav" aria-label="Previous and next chapters"><a href="01-app-map.html"><small>Previous chapter</small><strong>← Map the app before writing code</strong></a><a href="03-js-data.html"><small>Next chapter</small><strong>JavaScript values and data structures →</strong></a></nav>

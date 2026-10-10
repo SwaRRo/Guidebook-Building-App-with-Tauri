@@ -18,7 +18,10 @@
     });
   }
 
-  const storageKey = "erp-course-completed-v1";
+  const trackId = document.body.dataset.track || "frontend";
+  const storageKey = trackId === "frontend"
+    ? "erp-course-completed-v1"
+    : `course-completed-${trackId}-v1`;
   const readCompleted = () => {
     try { return JSON.parse(localStorage.getItem(storageKey) || "[]"); }
     catch { return []; }
