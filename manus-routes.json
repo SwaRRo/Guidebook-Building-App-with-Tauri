@@ -111,6 +111,54 @@
     {
       "path": "/python-course/chapters/15-observability-security-launch.html",
       "title": "15 — VPS production runbook: TLS, observability, security, backups, and release safety"
+    },
+    {
+      "path": "/short-chapters/",
+      "title": "Short chapter versions"
+    },
+    {
+      "path": "/short-chapters/01-app-map.html",
+      "title": "01 — Map the app"
+    },
+    {
+      "path": "/short-chapters/02-html-css.html",
+      "title": "02 — HTML, CSS, and the browser"
+    },
+    {
+      "path": "/short-chapters/03-js-data.html",
+      "title": "03 — JavaScript data structures"
+    },
+    {
+      "path": "/short-chapters/04-js-logic.html",
+      "title": "04 — Decisions and functions"
+    },
+    {
+      "path": "/short-chapters/05-async-json.html",
+      "title": "05 — Async JavaScript and JSON"
+    },
+    {
+      "path": "/short-chapters/06-react-components.html",
+      "title": "06 — React components and props"
+    },
+    {
+      "path": "/short-chapters/07-react-state.html",
+      "title": "07 — React state and forms"
+    },
+    {
+      "path": "/short-chapters/08-python-fastapi.html",
+      "title": "08 — Python and FastAPI"
+    },
+    {
+      "path": "/short-chapters/09-sqlite.html",
+      "title": "09 — SQL and SQLite"
+    },
+    {
+      "path": "/short-chapters/10-tauri-rust.html",
+      "title": "10 — Tauri and Rust"
+    },
+    {
+      "path": "/short-chapters/11-capstone.html",
+      "title": "11 — Capstone feature"
     }
   ]
 }
