@@ -2,6 +2,10 @@
 
 A dependency-free, static, multi-page learning course for beginning a Tauri + React + FastAPI + SQLite desktop app project.
 
+## Run directly from Github
+
+https://swarro.github.io/Guidebook-Building-App-with-Tauri/
+
 ## Run locally
 
 From the project directory:
